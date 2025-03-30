@@ -1,0 +1,7 @@
+- [x] Input scene info (scene number, date (optional), brief summary/preview of first note)
+- [x] Add remove scenes
+- [x] Sort by scene number, sort by shoot date
+- [x] Double click to expand/focus on scene
+- [ ] Click once to show markdown preview, double click to edit markdown
+- [x] Highlight warn colours 3 weeks shoot away and err colours for 2 weeks
+- [ ] Hide scenes that have complete notes (checkbox Show completed?)

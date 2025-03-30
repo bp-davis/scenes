@@ -1,22 +1,22 @@
-import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-
-export const Homepage = () => {
-    return(
-        <div>
-            <h1 className="bg-gray-500 text-center">Hello react in electron</h1>
-            <h1>Homepage</h1>
-        </div>
-    )
-}
+import "./index.css";
+import * as React from "react";
+import { createRoot } from "react-dom/client";
+import { MemoryRouter as Router, Routes, Route } from "react-router-dom";
+import { Root } from "./renderer/Root";
 
 const App = () => {
     return (
-      <Router>
-        <Routes>
-          <Route path="/" element={<Homepage />} />
-        </Routes>
-      </Router>
+        <Router>
+            <Routes>
+                <Route path="/" element={<Root />} />
+            </Routes>
+        </Router>
     );
-}
+};
 
-export default App;
+const root = createRoot(document.getElementById("root") as HTMLElement);
+root.render(
+    <React.StrictMode>
+        <App />
+    </React.StrictMode>,
+);
