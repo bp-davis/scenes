@@ -245,6 +245,7 @@ const Scenes: React.FC = () => {
     const addScene = useScenesStore((state: ScenesStore) => state.addScene); // Get addScene function
     const [selectedScene, setSelectedScene] = useState<number | null>(null);
     const [modalScene, setModalScene] = useState<Scene | null>(null);
+    const [showCompleted, setShowCompleted] = useState(false);
 
     const handleSelect = (id: number) => {
         setSelectedScene(id);
@@ -269,8 +270,17 @@ const Scenes: React.FC = () => {
 
     return (
         <>
+            <TopBar
+                setShowCompleted={setShowCompleted}
+                showCompleted={showCompleted}
+            />
             <div className="grid grid-cols-4 gap-4 p-4">
-                {scenes.map((scene: Scene) => (
+                {scenes.filter((scene) => {
+                    if (showCompleted) {
+                        return true;
+                    }
+                    return !scene.notes?.every((note) => note.complete);
+                }).map((scene: Scene) => (
                     <ScenesTile
                         key={scene.id}
                         scene={scene}
@@ -387,7 +397,15 @@ export const ScenesTile = ({
     );
 };
 
-export const TopBar: React.FC = () => {
+export interface TopBarProps {
+    setShowCompleted: (show: boolean) => void;
+    showCompleted: boolean;
+}
+
+export const TopBar = ({
+    setShowCompleted,
+    showCompleted,
+}: TopBarProps) => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [menuType, setMenuType] = React.useState<string | null>(null);
     const [sortBy, setSortBy] = React.useState<"shootDate" | "id">("id");
@@ -423,7 +441,7 @@ export const TopBar: React.FC = () => {
                     <input
                         type="checkbox"
                         onChange={(e) => {
-                            // Add logic to handle "Show completed" toggle
+                            setShowCompleted(e.target.checked);
                         }}
                         style={{ transform: "scale(1.2)" }}
                     />
