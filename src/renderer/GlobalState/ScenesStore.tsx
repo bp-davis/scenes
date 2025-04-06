@@ -3,72 +3,28 @@ import { create } from "zustand";
 export interface SceneNote {
     id: number;
     content: string;
-    createdAt: string;
-    updatedAt: string;
     complete: boolean;
 }
 
 export interface Scene {
-    id: number;
+    num: string;
     brief: string | "";
     shootDate: string | null;
-    notes?: SceneNote[];
+    notes: SceneNote[];
 }
 
 export interface ScenesStore {
     scenes: Scene[];
     sortBy: "shootDate" | "id"; // New property to track the current sort key
     addScene: (scene: Scene) => void;
-    removeScene: (id: number) => void;
-    updateScene: (id: number, updatedScene: Partial<Scene>) => void;
-    sortScenes: (key: "shootDate" | "id") => void; // New sortScenes method
+    removeScene: (num: string) => void;
+    updateScene: (num: string, updatedScene: Partial<Scene>) => void;
+    sortScenes: (key: "shootDate" | "num") => void; // New sortScenes method
+    removeAllScenes: () => void;
 }
 
 const useScenesStore = create<ScenesStore>((set) => ({
-    scenes: [
-        {
-            id: 1,
-            brief: "John talks to Kate",
-            shootDate: "2025-05-20",
-            notes: [
-                {
-                    id: 1,
-                    content: "This is a note",
-                    createdAt: "2025-05-01",
-                    updatedAt: "2025-05-02",
-                    complete: false,
-                },
-            ],
-        },
-        {
-            id: 2,
-            brief: "John goes missing",
-            shootDate: "2025-04-12",
-            notes: [
-                {
-                    id: 2,
-                    content: "This is another note",
-                    createdAt: "2025-04-01",
-                    updatedAt: "2025-04-02",
-                    complete: true,
-                },
-            ],
-        },
-        {
-            id: 3,
-            brief: "Kate finds John",
-            shootDate: "2025-04-25",
-            notes: [
-                {
-                    id: 3,
-                    content: "This is a third note",
-                    createdAt: "2025-04-10",
-                    updatedAt: "2025-04-11",
-                    complete: false,
-                },
-            ],
-        },
-    ],
+    scenes: [],
     sortBy: "id", // Default sort key
     addScene: (scene: Scene) =>
         set((state: ScenesStore) => {
@@ -77,29 +33,47 @@ const useScenesStore = create<ScenesStore>((set) => ({
                 if (state.sortBy === "shootDate") {
                     return (a.shootDate || "").localeCompare(b.shootDate || "");
                 }
-                return a.id - b.id;
+                return parseInt(a.num) - parseInt(b.num);
             });
             return { scenes: sortedScenes };
         }),
-    removeScene: (id: number) =>
+    removeScene: (num: string) =>
         set((state: ScenesStore) => ({
-            scenes: state.scenes.filter((scene) => scene.id !== id),
+            scenes: state.scenes.filter((scene) => scene.num !== num),
         })),
-    updateScene: (id: number, updatedScene: Partial<Scene>) =>
+    updateScene: (num: string, updatedScene: Partial<Scene>) =>
         set((state: ScenesStore) => ({
             scenes: state.scenes.map((scene) =>
-                scene.id === id ? { ...scene, ...updatedScene } : scene,
+                scene.num === num ? { ...scene, ...updatedScene } : scene,
             ),
         })),
-    sortScenes: (key: "shootDate" | "id") =>
-        set((state: ScenesStore) => ({
-            scenes: [...state.scenes].sort((a, b) => {
+    sortScenes: (key: "shootDate" | "num") =>
+        set((state: ScenesStore) => {
+            const newScenes = [...state.scenes].sort((a, b) => {
                 if (key === "shootDate") {
-                    return (a.shootDate || "").localeCompare(b.shootDate || "");
+                    if (a.shootDate === null && b.shootDate === null) {
+                        return parseInt(a.num) - parseInt(b.num);
+                    }
+                    if (a.shootDate === null && b.shootDate !== null) {
+                        return +1;
+                    }
+                    if (a.shootDate !== null && b.shootDate === null) {
+                        return -1;
+                    }
+                    return new Date(a.shootDate || "") <
+                        new Date(b.shootDate || "")
+                        ? -1
+                        : +1;
                 }
-                return a.id - b.id;
-            }),
-        })),
+                return parseInt(a.num) - parseInt(b.num);
+            });
+            return { ...state, scenes: newScenes };
+        }),
+    removeAllScenes: () => {
+        set(() => ({
+            scenes: [],
+        }));
+    },
 }));
 
 export default useScenesStore;

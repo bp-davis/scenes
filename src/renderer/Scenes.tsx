@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
-import useScenesStore, { Scene, SceneNote, ScenesStore } from "./GlobalState/ScenesStore"; // Import the store and state type
+import useScenesStore, {
+    Scene,
+    SceneNote,
+    ScenesStore,
+} from "./GlobalState/ScenesStore"; // Import the store and state type
 import {
     AppBar,
     Toolbar,
@@ -7,12 +11,14 @@ import {
     Menu,
     MenuItem,
     Button,
+    TextField,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import toast, { Toaster } from "react-hot-toast";
 
 export interface SceneEditorProps {
-    scene: number | null;
+    scene: string | null;
     handleCloseEditor: () => void;
 }
 
@@ -21,17 +27,17 @@ const SceneEditor = ({ scene, handleCloseEditor }: SceneEditorProps) => {
     const updateScene = useScenesStore(
         (state: ScenesStore) => state.updateScene,
     );
-    const selectedScene = scenes.find((s) => s.id === scene);
+    const selectedScene = scenes.find((s) => s.num === scene);
 
-    const [sceneId, setSceneId] = useState(selectedScene?.id || "");
+    const [sceneId, setSceneId] = useState(selectedScene?.num || "");
     const [brief, setBrief] = useState(selectedScene?.brief || "");
     const [shootDate, setShootDate] = useState(selectedScene?.shootDate || "");
     const [newTodo, setNewTodo] = useState("");
 
     const handleSave = () => {
         if (selectedScene) {
-            updateScene(selectedScene.id, {
-                id: Number(sceneId),
+            updateScene(selectedScene.num, {
+                num: sceneId,
                 brief: brief,
                 shootDate: shootDate,
             });
@@ -41,15 +47,13 @@ const SceneEditor = ({ scene, handleCloseEditor }: SceneEditorProps) => {
     const handleAddTodo = () => {
         if (!selectedScene) return;
         if (newTodo.trim()) {
-            updateScene(selectedScene?.id, {
+            updateScene(selectedScene?.num, {
                 ...selectedScene,
                 notes: [
                     ...(selectedScene?.notes || []),
                     {
                         content: newTodo.trim(),
                         complete: false,
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
                     } as SceneNote,
                 ],
             } as Scene); // Update the scene with the new todo
@@ -59,7 +63,7 @@ const SceneEditor = ({ scene, handleCloseEditor }: SceneEditorProps) => {
 
     const handleRemoveTodo = (index: number) => {
         if (!selectedScene) return;
-        updateScene(selectedScene?.id, {
+        updateScene(selectedScene?.num, {
             ...selectedScene,
             notes: selectedScene?.notes?.filter((_, i) => i !== index),
         } as Scene); // Update the scene with the removed todo
@@ -67,13 +71,13 @@ const SceneEditor = ({ scene, handleCloseEditor }: SceneEditorProps) => {
 
     const handleNoteComplete = (index: number, state: boolean) => {
         if (!selectedScene) return;
-        updateScene(selectedScene?.id, {
+        updateScene(selectedScene?.num, {
             ...selectedScene,
             notes: selectedScene?.notes?.map((note, i) =>
                 i === index ? { ...note, complete: state } : note,
             ),
         } as Scene); // Update the scene with the updated todo
-    }
+    };
 
     const handleEditTodo = (index: number) => {
         if (!selectedScene) return;
@@ -89,10 +93,10 @@ const SceneEditor = ({ scene, handleCloseEditor }: SceneEditorProps) => {
             if (event.key === "Escape") {
                 handleCloseEditor();
             }
-        }
-      
+        };
+
         document.addEventListener("keydown", handleKeyDown);
-    
+
         return function cleanup() {
             document.removeEventListener("keydown", handleKeyDown);
         };
@@ -128,9 +132,7 @@ const SceneEditor = ({ scene, handleCloseEditor }: SceneEditorProps) => {
                                 />
                             </svg>
                         </button>
-                        <h2 className="text-2xl mb-4">
-                            Scene Details
-                        </h2>
+                        <h2 className="text-2xl mb-4">Scene Details</h2>
                         <div className="mb-8 flex flex-col md:flex-row md:space-x-4">
                             <div className="flex-1 mb-4 md:mb-0">
                                 <label className="block mb-1">
@@ -145,9 +147,7 @@ const SceneEditor = ({ scene, handleCloseEditor }: SceneEditorProps) => {
                                 />
                             </div>
                             <div className="flex-1 mb-4 md:mb-0">
-                                <label className="block mb-1">
-                                    Summary
-                                </label>
+                                <label className="block mb-1">Summary</label>
                                 <input
                                     type="text"
                                     className="border rounded p-2 w-full"
@@ -157,9 +157,7 @@ const SceneEditor = ({ scene, handleCloseEditor }: SceneEditorProps) => {
                                 />
                             </div>
                             <div className="flex-1 mb-4 md:mb-0">
-                                <label className="block mb-1">
-                                    Shoot Date
-                                </label>
+                                <label className="block mb-1">Shoot Date</label>
                                 <input
                                     type="date"
                                     className="border rounded p-2 w-full"
@@ -168,6 +166,14 @@ const SceneEditor = ({ scene, handleCloseEditor }: SceneEditorProps) => {
                                         setShootDate(e.target.value)
                                     }
                                 />
+                                {shootDate && (
+                                    <p className="mt-2 text-sm text-gray-600">
+                                        Selected Date:{" "}
+                                        {new Date(
+                                            shootDate,
+                                        ).toLocaleDateString()}
+                                    </p>
+                                )}
                             </div>
                             <div className="flex-1 flex items-end">
                                 <button
@@ -177,7 +183,9 @@ const SceneEditor = ({ scene, handleCloseEditor }: SceneEditorProps) => {
                                             : "bg-blue-500 text-white hover:bg-blue-600"
                                     }`}
                                     onClick={handleSave}
-                                    disabled={sceneId === "" || isNaN(Number(sceneId))}
+                                    disabled={
+                                        sceneId === "" || isNaN(Number(sceneId))
+                                    }
                                 >
                                     Save
                                 </button>
@@ -194,10 +202,17 @@ const SceneEditor = ({ scene, handleCloseEditor }: SceneEditorProps) => {
                                         type="checkbox"
                                         className="ml-2 mr-3 transform scale-150"
                                         checked={note.complete}
-                                        onChange={(e) => handleNoteComplete(index, e.target.checked)}
+                                        onChange={(e) =>
+                                            handleNoteComplete(
+                                                index,
+                                                e.target.checked,
+                                            )
+                                        }
                                         onClick={(e) => e.stopPropagation()}
                                     />
-                                    <span className="flex-grow text-l">{note.content}</span>
+                                    <span className="flex-grow text-l">
+                                        {note.content}
+                                    </span>
                                     <button
                                         className="ml-2 p-2 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600"
                                         onClick={() => handleEditTodo(index)}
@@ -241,21 +256,59 @@ const SceneEditor = ({ scene, handleCloseEditor }: SceneEditorProps) => {
 };
 
 const Scenes: React.FC = () => {
-    const scenes = useScenesStore((state: ScenesStore) => state.scenes); // Get scenes from the store
-    const addScene = useScenesStore((state: ScenesStore) => state.addScene); // Get addScene function
-    const [selectedScene, setSelectedScene] = useState<number | null>(null);
+    const scenes = useScenesStore((state: ScenesStore) => state.scenes);
+    const addScene = useScenesStore((state: ScenesStore) => state.addScene);
+    const removeAllScenes = useScenesStore(
+        (state: ScenesStore) => state.removeAllScenes,
+    );
+    const [selectedScene, setSelectedScene] = useState<string | null>(null);
     const [modalScene, setModalScene] = useState<Scene | null>(null);
     const [showCompleted, setShowCompleted] = useState(false);
+    const [sortBy, setSortBy] = React.useState<"shootDate" | "num">(
+        (window.localStorage.getItem("sortBy") as "shootDate" | "num") || "num",
+    );
+    const sortScenes = useScenesStore((state: ScenesStore) => state.sortScenes);
 
-    const handleSelect = (id: number) => {
-        setSelectedScene(id);
+    const loadCurrentWorkspace = async () => {
+        removeAllScenes();
+        const filePath = window.localStorage.getItem("currentWorkspace");
+        if (!filePath) {
+            return;
+        }
+        const scenes = await window.electronAPI.loadScenesFromFile({ filePath });
+        if (scenes.length === 0) {
+            return;
+        } else {
+            toast.success("Successfully restored workspace");
+        }
+        for (let scene of scenes) {
+            addScene(scene);
+        }
+        sortScenes(sortBy);
+    };
+
+    useEffect(() => {
+        const init = async () => {
+            await loadCurrentWorkspace();
+        };
+        init();
+    }, []);
+
+    useEffect(() => {
+        sortScenes(sortBy);
+        window.localStorage.setItem("sortBy", sortBy);
+    }, [sortBy]);
+
+    const handleSelect = (num: string) => {
+        setSelectedScene(num);
     };
 
     const handleAddScene = () => {
         const newScene = {
-            id: scenes.length + 1,
+            num: String(scenes.length + 1),
             brief: `Scene ${scenes.length + 1}`,
             shootDate: null,
+            notes: [],
         };
         addScene(newScene); // Use the store's addScene function
     };
@@ -270,25 +323,29 @@ const Scenes: React.FC = () => {
 
     return (
         <>
+            <Toaster />
             <TopBar
                 setShowCompleted={setShowCompleted}
                 showCompleted={showCompleted}
+                sortBy={sortBy}
+                setSortBy={setSortBy}
             />
-            <div className="grid grid-cols-4 gap-4 p-4">
-                {scenes.filter((scene) => {
-                    if (showCompleted) {
-                        return true;
-                    }
-                    return !scene.notes?.every((note) => note.complete);
-                }).map((scene: Scene) => (
-                    <ScenesTile
-                        key={scene.id}
-                        scene={scene}
-                        selectedScene={selectedScene}
-                        handleSelect={handleSelect}
-                        onDoubleClick={() => handleDoubleClick(scene)}
-                    />
-                ))}
+            <div className="grid xl:grid-cols-6 lg:grid-cols-5 md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-4 p-4">
+                {scenes
+                    .filter((scene) => {
+                        if (showCompleted) {
+                            return true;
+                        }
+                        return !scene.notes?.every((note) => note.complete);
+                    })
+                    .map((scene: Scene) => (
+                        <ScenesTile
+                            key={scene.num}
+                            scene={scene}
+                            handleSelect={handleSelect}
+                            onDoubleClick={() => handleDoubleClick(scene)}
+                        />
+                    ))}
                 <div
                     className="w-full aspect-square p-4 border rounded-lg shadow-md cursor-pointer transition-transform transform hover:scale-105 flex items-center justify-center bg-gray-100 text-gray-500 border-gray-300 hover:bg-gray-200"
                     onClick={handleAddScene}
@@ -308,54 +365,40 @@ const Scenes: React.FC = () => {
 
 export interface ScenesTileProps {
     scene: Scene;
-    selectedScene: number | null;
-    handleSelect: (id: number) => void;
+    handleSelect: (num: string) => void;
     onDoubleClick: () => void;
 }
 
 export const ScenesTile = ({
     scene,
-    selectedScene,
     handleSelect,
     onDoubleClick,
 }: ScenesTileProps) => {
     const removeScene = useScenesStore(
         (state: ScenesStore) => state.removeScene,
     );
-    const updateScene = useScenesStore(
-        (state: ScenesStore) => state.updateScene,
-    );
-
-    const [isEditing, setIsEditing] = useState(false);
-    const [sceneId, setSceneId] = useState(String(scene.id));
-    const [brief, setBrief] = useState(scene.brief);
-    const [shootDate, setShootDate] = useState(String(scene.shootDate) || "");
     const [style, setStyle] = useState("");
 
-    const handleRemoveScene = (id: number) => {
-        removeScene(id);
-    };
-
-    const handleSave = () => {
-        updateScene(scene.id, {
-            id: Number(sceneId),
-            brief: brief,
-            shootDate: shootDate,
-        });
-        setIsEditing(false);
+    const handleRemoveScene = (num: string) => {
+        removeScene(num);
     };
 
     useEffect(() => {
         if (!scene.shootDate) return;
         const shootDateTimestamp = new Date(scene.shootDate).getTime();
         const currentDateTimestamp = new Date().getTime();
-        if (shootDateTimestamp - currentDateTimestamp < 14 * 24 * 60 * 60 * 1000) {
+        if (
+            shootDateTimestamp - currentDateTimestamp <
+            14 * 24 * 60 * 60 * 1000
+        ) {
             setStyle("bg-red-500 shadow-[0px_0px_15px_1px_rgba(255,46,88,1)]");
         } else if (
             shootDateTimestamp - currentDateTimestamp <
             21 * 24 * 60 * 60 * 1000
         ) {
-            setStyle("bg-orange-500 shadow-[0px_0px_15px_1px_rgba(255,163,72,1)]");
+            setStyle(
+                "bg-orange-500 shadow-[0px_0px_15px_1px_rgba(255,163,72,1)]",
+            );
         } else {
             setStyle("shadow-md");
         }
@@ -363,9 +406,9 @@ export const ScenesTile = ({
 
     return (
         <div
-            key={scene.id}
+            key={scene.num}
             className={`group relative w-full aspect-square p-4 border rounded-lg cursor-pointer transition-transform transform ${"hover:scale-105"} flex items-center justify-center bg-white text-gray-800 border-gray-300" ${style}`}
-            onClick={() => handleSelect(scene.id)}
+            onClick={() => handleSelect(scene.num)}
             onDoubleClick={onDoubleClick}
         >
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
@@ -373,7 +416,7 @@ export const ScenesTile = ({
                     className="p-1 text-gray-400 hover:text-gray-600"
                     onClick={(e) => {
                         e.stopPropagation();
-                        handleSelect(scene.id);
+                        handleSelect(scene.num);
                         onDoubleClick();
                     }}
                 >
@@ -383,15 +426,19 @@ export const ScenesTile = ({
                     className="p-1 text-gray-400 hover:text-gray-600"
                     onClick={(e) => {
                         e.stopPropagation();
-                        handleRemoveScene(scene.id);
+                        handleRemoveScene(scene.num);
                     }}
                 >
                     <DeleteIcon />
                 </button>
             </div>
             <div className="text-center">
-                <h3 className="text-lg font-bold">Scene {scene.id}</h3>
-                <p className="text-sm">{scene.brief}</p>
+                <h3 className="text-lg font-bold truncate">
+                    Scene {scene.num}
+                </h3>
+                <p className="text-sm break-words line-clamp-3 overflow-hidden">
+                    {scene.brief}
+                </p>
             </div>
         </div>
     );
@@ -400,17 +447,23 @@ export const ScenesTile = ({
 export interface TopBarProps {
     setShowCompleted: (show: boolean) => void;
     showCompleted: boolean;
+    sortBy: "shootDate" | "num";
+    setSortBy: (sortBy: "shootDate" | "num") => void;
 }
 
 export const TopBar = ({
     setShowCompleted,
     showCompleted,
+    sortBy,
+    setSortBy,
 }: TopBarProps) => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [menuType, setMenuType] = React.useState<string | null>(null);
-    const [sortBy, setSortBy] = React.useState<"shootDate" | "id">("id");
-    const sortScenes = useScenesStore(
-        (state: ScenesStore) => state.sortScenes,
+    const scenes = useScenesStore((state: ScenesStore) => state.scenes);
+    const sortScenes = useScenesStore((state: ScenesStore) => state.sortScenes);
+    const addScene = useScenesStore((state: ScenesStore) => state.addScene);
+    const removeAllScenes = useScenesStore(
+        (state: ScenesStore) => state.removeAllScenes,
     );
 
     const handleMenuOpen = (
@@ -426,9 +479,47 @@ export const TopBar = ({
         setMenuType(null);
     };
 
-    useEffect(() => {
+    const loadScenesFromFile = async () => {
+        handleMenuClose();
+        removeAllScenes();
+        const filePath = await window.electronAPI.selectFileToLoad();
+        if (!filePath) {
+            toast.error("No file selected");
+            return;
+        }
+        const scenes = await window.electronAPI.loadScenesFromFile({ filePath });
+        if (scenes.length === 0) {
+            toast.error("No scenes found in the file");
+            return;
+        } else {
+            toast.success("Successfully loaded scenes from file");
+            window.localStorage.setItem("currentWorkspace", filePath);
+        }
+        for (let scene of scenes) {
+            addScene(scene);
+        }
         sortScenes(sortBy);
-    }, [sortBy]);
+    };
+
+    const saveAsFile = async () => {
+        handleMenuClose();
+        const filePath = await window.electronAPI.selectFileToSave();
+        if (!filePath) {
+            toast.error("No file selected");
+            return;
+        }
+        const success = await window.electronAPI.saveScenesToFile({
+            filePath,
+            scenes,
+        });
+        if (!success) {
+            toast.error("Failed to save scenes to file");
+            return;
+        } else {
+            toast.success("Successfully saved scenes to file");
+            window.localStorage.setItem("currentWorkspace", filePath);
+        }
+    };
 
     return (
         <AppBar position="static" color="primary">
@@ -436,21 +527,36 @@ export const TopBar = ({
                 <Typography variant="h6" style={{ flexGrow: 1 }}>
                     Scenes
                 </Typography>
-                <div style={{ display: "flex", alignItems: "center", marginRight: "1rem" }}>
-                    <label style={{ marginRight: "0.5rem", color: "#fff" }}>Show completed</label>
+                <TextField
+                    id="outlined-basic"
+                    variant="filled"
+                    size="small"
+                    label="Search"
+                    className="border-radius-4 bg-white rounded"
+                />
+                <div
+                    className="flex items-center pl-4 pr-4"
+                >
+                    <label style={{ marginRight: "0.5rem", color: "#fff" }}>
+                        Show completed
+                    </label>
                     <input
                         type="checkbox"
+                        checked={showCompleted}
+                        className="p-8"
                         onChange={(e) => {
                             setShowCompleted(e.target.checked);
                         }}
                         style={{ transform: "scale(1.2)" }}
                     />
                 </div>
-                <label style={{ marginRight: "0.5rem", color: "#fff" }}>Sort by</label>
+                <label style={{ marginRight: "0.5rem", color: "#fff" }}>
+                    Sort by
+                </label>
                 <select
                     value={sortBy}
                     onChange={(e) =>
-                        setSortBy(e.target.value as "shootDate" | "id")
+                        setSortBy(e.target.value as "shootDate" | "num")
                     }
                     style={{
                         marginLeft: "auto",
@@ -470,56 +576,15 @@ export const TopBar = ({
                 >
                     File
                 </Button>
-                <Button
-                    color="inherit"
-                    onClick={(e) => handleMenuOpen(e, "edit")}
-                >
-                    Edit
-                </Button>
-                <Button
-                    color="inherit"
-                    onClick={(e) => handleMenuOpen(e, "view")}
-                >
-                    View
-                </Button>
-
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl) && menuType === "file"}
                     onClose={handleMenuClose}
                 >
-                    <MenuItem onClick={handleMenuClose}>New scene</MenuItem>
-                    <MenuItem onClick={handleMenuClose}>
-                        New production
+                    <MenuItem onClick={loadScenesFromFile}>
+                        Load from file...
                     </MenuItem>
-                    <MenuItem onClick={handleMenuClose}>
-                        Open production
-                    </MenuItem>
-                    <MenuItem onClick={handleMenuClose}>
-                        Save production
-                    </MenuItem>
-                </Menu>
-
-                <Menu
-                    anchorEl={anchorEl}
-                    open={Boolean(anchorEl) && menuType === "edit"}
-                    onClose={handleMenuClose}
-                >
-                    <MenuItem onClick={handleMenuClose}>Undo</MenuItem>
-                    <MenuItem onClick={handleMenuClose}>Redo</MenuItem>
-                    <MenuItem onClick={handleMenuClose}>Cut</MenuItem>
-                    <MenuItem onClick={handleMenuClose}>Copy</MenuItem>
-                    <MenuItem onClick={handleMenuClose}>Paste</MenuItem>
-                </Menu>
-
-                <Menu
-                    anchorEl={anchorEl}
-                    open={Boolean(anchorEl) && menuType === "view"}
-                    onClose={handleMenuClose}
-                >
-                    <MenuItem onClick={handleMenuClose}>Zoom In</MenuItem>
-                    <MenuItem onClick={handleMenuClose}>Zoom Out</MenuItem>
-                    <MenuItem onClick={handleMenuClose}>Full Screen</MenuItem>
+                    <MenuItem onClick={saveAsFile}>Save as file...</MenuItem>
                 </Menu>
             </Toolbar>
         </AppBar>
