@@ -268,6 +268,7 @@ const Scenes: React.FC = () => {
         (window.localStorage.getItem("sortBy") as "shootDate" | "num") || "num",
     );
     const sortScenes = useScenesStore((state: ScenesStore) => state.sortScenes);
+    const [filterBy, setFilterBy] = useState<string>("");
 
     const loadCurrentWorkspace = async () => {
         removeAllScenes();
@@ -329,6 +330,8 @@ const Scenes: React.FC = () => {
                 showCompleted={showCompleted}
                 sortBy={sortBy}
                 setSortBy={setSortBy}
+                filterBy={filterBy}
+                setFilterBy={setFilterBy}
             />
             <div className="grid xl:grid-cols-6 lg:grid-cols-5 md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-4 p-4">
                 {scenes
@@ -337,6 +340,17 @@ const Scenes: React.FC = () => {
                             return true;
                         }
                         return !scene.notes?.every((note) => note.complete);
+                    })
+                    .filter((scene) => {
+                        if (filterBy === "") {
+                            return true;
+                        }
+                        return scene.brief
+                            .toLowerCase()
+                            .includes(filterBy.toLowerCase())
+                            || scene.num
+                            .toLowerCase()
+                            .includes(filterBy.toLowerCase());
                     })
                     .map((scene: Scene) => (
                         <ScenesTile
@@ -449,6 +463,8 @@ export interface TopBarProps {
     showCompleted: boolean;
     sortBy: "shootDate" | "num";
     setSortBy: (sortBy: "shootDate" | "num") => void;
+    filterBy: string;
+    setFilterBy: (filterBy: string) => void;
 }
 
 export const TopBar = ({
@@ -456,6 +472,8 @@ export const TopBar = ({
     showCompleted,
     sortBy,
     setSortBy,
+    filterBy,
+    setFilterBy,
 }: TopBarProps) => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [menuType, setMenuType] = React.useState<string | null>(null);
@@ -533,6 +551,8 @@ export const TopBar = ({
                     size="small"
                     label="Search"
                     className="border-radius-4 bg-white rounded"
+                    value={filterBy}
+                    onChange={(e) => setFilterBy(e.target.value)}
                 />
                 <div
                     className="flex items-center pl-4 pr-4"
