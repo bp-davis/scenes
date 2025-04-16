@@ -20,5 +20,5 @@ jobs:
       - name: Upload package
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: scenes.dmg
-          path: ./out
+          name: package
+          path: ./out/make
